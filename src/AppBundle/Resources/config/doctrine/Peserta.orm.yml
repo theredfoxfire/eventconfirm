@@ -1,0 +1,36 @@
+AppBundle\Entity\Peserta:
+ type: entity
+ repositoryClass: AppBundle\Repository\PesertaRepository
+ table: peserta
+ id:
+  id:
+   type: integer
+   generator: { strategy: AUTO }
+ fields:
+  timestamp:
+   type: datetime
+  name:
+   type: string
+  gender:
+   type: string
+   length: 20
+  origin:
+   type: string
+  pod:
+   type: string
+  bod:
+   type: string
+   nullable: true
+  address:
+   type: text
+  phone:
+   type: string
+   length: 30
+  email:
+   type: string
+  present:
+   type: boolean
+   nullable: true
+  print:
+   type: boolean
+   nullable: true
