@@ -10,4 +10,57 @@ namespace AppBundle\Repository;
  */
 class PesertaRepository extends \Doctrine\ORM\EntityRepository
 {
+	public function dataQuery()
+	{
+		return $this->getEntityManager()
+		->createQueryBuilder()
+		->from('AppBundle\Entity\Peserta','p')
+		->select('p')
+		->where('p.present = :pre')->setParameter('pre', true)
+		->orderBy('p.origin, p.name')
+		->groupBy('p.email')
+		->getQuery();
+	}
+	
+	public function dataAllQuery()
+	{
+		return $this->getEntityManager()
+		->createQueryBuilder()
+		->from('AppBundle\Entity\Peserta','p')
+		->select('p')
+		->orderBy('p.origin, p.name')
+		->groupBy('p.email')
+		->getQuery();
+	}
+	
+	public function getReportData()
+	{
+		return $this->getEntityManager()
+		->createQueryBuilder()
+		->from('AppBundle\Entity\Peserta','p')
+		->select('p')
+		->orderBy('p.origin, p.name')
+		->groupBy('p.email')
+		->where('p.present = :pre')->setParameter('pre', true)
+		->getQuery()->getResult();
+	}
+	
+	public function getPeserta($key)
+	{
+	$query = $this->getEntityManager()
+			->createQuery('
+				select o from AppBundle:Peserta o
+				where o.name like :key 
+				and o.present = :pre
+				order by o.name
+			')
+			->setParameters(
+				array(
+					'pre' => false,
+					'key' => '%'.$key.'%',
+				)
+			);
+			
+		return $query->getResult();
+	}
 }

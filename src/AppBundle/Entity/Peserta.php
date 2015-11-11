@@ -283,6 +283,15 @@ class Peserta
     {
         return $this->print;
     }
+    
+    protected $cetak;
+    
+    public function getCetak()
+    {
+		return ($this->print == true ? $this->cetak = "Ya" : $this->cetak = "Tidak");
+        
+    }
+    
     /**
      * @var string
      */

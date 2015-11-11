@@ -1,61 +1,48 @@
 {% extends '::base.html.twig' %}
 
 {% block body -%}
+	<div class='container'>
+		<div class='row'>
     <h1>Peserta list</h1>
 
-    <table class="records_list">
-        <thead>
+    <table class="table table-bordered table-hover">
+        <thead >
             <tr>
-                <th>Id</th>
-                <th>Timestamp</th>
+                <th>No</th>
+                <th>Tanggal</th>
                 <th>Name</th>
                 <th>Gender</th>
                 <th>Origin</th>
-                <th>Pod</th>
-                <th>Bod</th>
-                <th>Address</th>
+                <th>Tempat/Tgl Lahir</th>
                 <th>Phone</th>
                 <th>Email</th>
-                <th>Present</th>
-                <th>Print</th>
-                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
+        {% set pg = app.request.query.get('page') %}
+		{% if pg == 1 or pg == null %}
+			{% set i = 1 %}
+		{% else %}
+			{% set i = 25 *( pg-1 ) + 1 %}
+		{% endif %}
         {% for entity in entities %}
             <tr>
-                <td><a href="{{ path('peserta_show', { 'id': entity.id }) }}">{{ entity.id }}</a></td>
-                <td>{% if entity.timestamp %}{{ entity.timestamp|date('Y-m-d H:i:s') }}{% endif %}</td>
+                <td>{{ i }}</td>
+                <td>{{ entity.timestamp|date('Y-m-d') }}</td>
                 <td>{{ entity.name }}</td>
                 <td>{{ entity.gender }}</td>
                 <td>{{ entity.origin }}</td>
                 <td>{{ entity.pod }}</td>
-                <td>{{ entity.bod }}</td>
-                <td>{{ entity.address }}</td>
                 <td>{{ entity.phone }}</td>
                 <td>{{ entity.email }}</td>
-                <td>{{ entity.present }}</td>
-                <td>{{ entity.print }}</td>
-                <td>
-                <ul>
-                    <li>
-                        <a href="{{ path('peserta_show', { 'id': entity.id }) }}">show</a>
-                    </li>
-                    <li>
-                        <a href="{{ path('peserta_edit', { 'id': entity.id }) }}">edit</a>
-                    </li>
-                </ul>
-                </td>
             </tr>
+            {% set i = i + 1 %}
         {% endfor %}
         </tbody>
     </table>
-
-        <ul>
-        <li>
-            <a href="{{ path('peserta_new') }}">
-                Create a new entry
-            </a>
-        </li>
-    </ul>
-    {% endblock %}
+			<div class="text-center">
+								<h4>{{ knp_pagination_render(entities) }}</h4>
+			</div>
+		</div>
+	</div>
+{% endblock %}

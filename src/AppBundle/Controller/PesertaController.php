@@ -4,11 +4,24 @@ namespace AppBundle\Controller;
 
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
+use Symfony\Component\HttpFoundation\Session\Session;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Template;
+use Symfony\Component\HttpFoundation\ResponseHeaderBag;
+use Symfony\Component\Filesystem\Filesystem;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use AppBundle\Entity\Peserta;
-use AppBundle\Form\PesertaType;
+use AppBundle\Form\PresentType;
+use ExcelAnt\Adapter\PhpExcel\Workbook\Workbook,
+    ExcelAnt\Adapter\PhpExcel\Sheet\Sheet,
+    ExcelAnt\Adapter\PhpExcel\Writer\Writer,
+    ExcelAnt\Table\Table,
+    ExcelAnt\Coordinate\Coordinate,
+    ExcelAnt\Adapter\PhpExcel\Writer\WriterFactory,
+    ExcelAnt\Adapter\PhpExcel\Writer\PhpExcelWriter\Excel5;
 
 /**
  * Peserta controller.
@@ -28,220 +41,151 @@ class PesertaController extends Controller
     public function indexAction()
     {
         $em = $this->getDoctrine()->getManager();
-
-        $entities = $em->getRepository('AppBundle:Peserta')->findAll();
-
-        return array(
-            'entities' => $entities,
-        );
-    }
-    /**
-     * Creates a new Peserta entity.
-     *
-     * @Route("/", name="peserta_create")
-     * @Method("POST")
-     * @Template("AppBundle:Peserta:new.html.twig")
-     */
-    public function createAction(Request $request)
-    {
-        $entity = new Peserta();
-        $form = $this->createCreateForm($entity);
-        $form->handleRequest($request);
-
-        if ($form->isValid()) {
-            $em = $this->getDoctrine()->getManager();
-            $em->persist($entity);
-            $em->flush();
-
-            return $this->redirect($this->generateUrl('peserta_show', array('id' => $entity->getId())));
-        }
+        $paginator = $this->get('knp_paginator');
+		$query = $em->getRepository('AppBundle:Peserta')->dataAllQuery();
+        $pagination = $paginator->paginate(
+			$query,
+			$this->get('request')->query->get('page', 1),
+			25
+		);
 
         return array(
-            'entity' => $entity,
-            'form'   => $form->createView(),
-        );
-    }
-
-    /**
-     * Creates a form to create a Peserta entity.
-     *
-     * @param Peserta $entity The entity
-     *
-     * @return \Symfony\Component\Form\Form The form
-     */
-    private function createCreateForm(Peserta $entity)
-    {
-        $form = $this->createForm(new PesertaType(), $entity, array(
-            'action' => $this->generateUrl('peserta_create'),
-            'method' => 'POST',
-        ));
-
-        $form->add('submit', 'submit', array('label' => 'Create'));
-
-        return $form;
-    }
-
-    /**
-     * Displays a form to create a new Peserta entity.
-     *
-     * @Route("/new", name="peserta_new")
-     * @Method("GET")
-     * @Template()
-     */
-    public function newAction()
-    {
-        $entity = new Peserta();
-        $form   = $this->createCreateForm($entity);
-
-        return array(
-            'entity' => $entity,
-            'form'   => $form->createView(),
-        );
-    }
-
-    /**
-     * Finds and displays a Peserta entity.
-     *
-     * @Route("/{id}", name="peserta_show")
-     * @Method("GET")
-     * @Template()
-     */
-    public function showAction($id)
-    {
-        $em = $this->getDoctrine()->getManager();
-
-        $entity = $em->getRepository('AppBundle:Peserta')->find($id);
-
-        if (!$entity) {
-            throw $this->createNotFoundException('Unable to find Peserta entity.');
-        }
-
-        $deleteForm = $this->createDeleteForm($id);
-
-        return array(
-            'entity'      => $entity,
-            'delete_form' => $deleteForm->createView(),
+            'entities' => $pagination,
         );
     }
 
     /**
      * Displays a form to edit an existing Peserta entity.
      *
-     * @Route("/{id}/edit", name="peserta_edit")
+     * @Route("/presensi", name="peserta_presensi")
+     * @Method({"GET", "POST"})
+     * @Template()
+     */
+    public function editAction(Request $request)
+    {
+        $em = $this->getDoctrine()->getManager();
+        $paginator = $this->get('knp_paginator');
+		$query = $em->getRepository('AppBundle:Peserta')->dataQuery();
+        $pagination = $paginator->paginate(
+			$query,
+			$this->get('request')->query->get('page', 1),
+			25
+		);
+		
+		$present = new Peserta();
+		$presentForm = $this->createForm(new PresentType(), $present, array(
+			'method' => 'POST'
+		));
+		
+		$presentForm->handleRequest($request);
+		
+		if ($presentForm->isValid() && $presentForm->isSubmitted()) {
+			$pre = explode('-', $present->getName());
+			$id = $pre[0];
+			$pres = $em->getRepository('AppBundle:Peserta')->findOneById($id);
+			($present->getPrint() == 1 ? $pres->setPrint(true) : $pres->setPrint(false));
+			$pres->setPresent(true);
+			$em->persist($pres);
+            $em->flush();
+            $this->get('session')->getFlashBag()->add('notice', 'Data presensi berhasil disimpan!');
+
+            return $this->redirect($this->generateUrl('peserta_presensi'));
+        }
+
+        return array(
+            'entities' => $pagination,
+            'form' => $presentForm->createView(),
+        );
+    }
+    
+    /**
+     * @Route("/search", name="peserta_search")
+     * @Method("GET")
+     */
+    public function autocompleteAction(Request $request)
+    {
+		$names = array();
+		$term = trim(strip_tags($request->get('term')));
+		
+		$em = $this->getDoctrine()->getManager();
+		$entities = $em->getRepository('AppBundle:Peserta')->getPeserta($term);
+		
+		foreach ($entities as $entity) {
+			$names[] = $entity->getId().'-'.$entity->getName().'-'.$entity->getOrigin();
+		}
+		
+		$response = new JsonResponse();
+		$response->setData($names);
+		
+		return $response;
+	}
+	
+	/**
+     * Lists all Peserta entities.
+     *
+     * @Route("/report", name="peserta_report")
      * @Method("GET")
      * @Template()
      */
-    public function editAction($id)
+    public function reportAction()
     {
-        $em = $this->getDoctrine()->getManager();
+        $peserta = $this->getDoctrine()->getManager()->getRepository('AppBundle:Peserta')->getReportData();
+        $workbook = new Workbook();
+        $sheet = new Sheet($workbook);
+        $table = new Table();
 
-        $entity = $em->getRepository('AppBundle:Peserta')->find($id);
-
-        if (!$entity) {
-            throw $this->createNotFoundException('Unable to find Peserta entity.');
+        $i = 1;
+        $table->setRow([
+                    'NO',
+                    'TANGGAL',
+                    'NAMA',
+                    'ALAMAT',
+                    'EMAIL',
+                    'PHONE',
+                    'ASAL INSTITUSI',
+                    'PRINT SERTIFIKAT',
+            ]);
+        foreach ($peserta as $p) {
+            $table->setRow([
+                    $i,
+                    $p->getTimestamp()->format('d-m-Y'),
+                    $p->getName(),
+                    $p->getAddress(),
+                    $p->getEmail(),
+                    $p->getPhone(),
+                    $p->getOrigin(),
+                    $p->getCetak(),
+            ]);
+        $i++;
         }
 
-        $editForm = $this->createEditForm($entity);
-        $deleteForm = $this->createDeleteForm($id);
+        $sheet->addTable($table, new Coordinate(1,1));
+        $workbook->addSheet($sheet);
+        $d = date('Y-m-d');
 
-        return array(
-            'entity'      => $entity,
-            'edit_form'   => $editForm->createView(),
-            'delete_form' => $deleteForm->createView(),
+        $writer = (new WriterFactory())->createWriter(new Excel5(__DIR__.'/../../../web/export/excel/'.$d.'-data-peserta.xls'));
+        $phpExcel = $writer->convert($workbook);
+        $writer->write($phpExcel);
+        
+        $filePath = __DIR__.'/../../../web/export/excel/'.$d.'-data-peserta.xls';
+
+        $fs = new FileSystem();
+        if (!$fs->exists($filePath)) {
+            throw $this->createNotFoundException();
+        }
+
+        // prepare BinaryFileResponse
+        $filename = $d.'-data-peserta.xls';
+        $response = new BinaryFileResponse($filePath);
+        $response->trustXSendfileTypeHeader();
+
+        $response->setContentDisposition(
+            ResponseHeaderBag::DISPOSITION_INLINE,
+            $filename,
+            iconv('UTF-8', 'ASCII//TRANSLIT', $filename)
         );
-    }
 
-    /**
-    * Creates a form to edit a Peserta entity.
-    *
-    * @param Peserta $entity The entity
-    *
-    * @return \Symfony\Component\Form\Form The form
-    */
-    private function createEditForm(Peserta $entity)
-    {
-        $form = $this->createForm(new PesertaType(), $entity, array(
-            'action' => $this->generateUrl('peserta_update', array('id' => $entity->getId())),
-            'method' => 'PUT',
-        ));
-
-        $form->add('submit', 'submit', array('label' => 'Update'));
-
-        return $form;
-    }
-    /**
-     * Edits an existing Peserta entity.
-     *
-     * @Route("/{id}", name="peserta_update")
-     * @Method("PUT")
-     * @Template("AppBundle:Peserta:edit.html.twig")
-     */
-    public function updateAction(Request $request, $id)
-    {
-        $em = $this->getDoctrine()->getManager();
-
-        $entity = $em->getRepository('AppBundle:Peserta')->find($id);
-
-        if (!$entity) {
-            throw $this->createNotFoundException('Unable to find Peserta entity.');
-        }
-
-        $deleteForm = $this->createDeleteForm($id);
-        $editForm = $this->createEditForm($entity);
-        $editForm->handleRequest($request);
-
-        if ($editForm->isValid()) {
-            $em->flush();
-
-            return $this->redirect($this->generateUrl('peserta_edit', array('id' => $id)));
-        }
-
-        return array(
-            'entity'      => $entity,
-            'edit_form'   => $editForm->createView(),
-            'delete_form' => $deleteForm->createView(),
-        );
-    }
-    /**
-     * Deletes a Peserta entity.
-     *
-     * @Route("/{id}", name="peserta_delete")
-     * @Method("DELETE")
-     */
-    public function deleteAction(Request $request, $id)
-    {
-        $form = $this->createDeleteForm($id);
-        $form->handleRequest($request);
-
-        if ($form->isValid()) {
-            $em = $this->getDoctrine()->getManager();
-            $entity = $em->getRepository('AppBundle:Peserta')->find($id);
-
-            if (!$entity) {
-                throw $this->createNotFoundException('Unable to find Peserta entity.');
-            }
-
-            $em->remove($entity);
-            $em->flush();
-        }
-
-        return $this->redirect($this->generateUrl('peserta'));
-    }
-
-    /**
-     * Creates a form to delete a Peserta entity by id.
-     *
-     * @param mixed $id The entity id
-     *
-     * @return \Symfony\Component\Form\Form The form
-     */
-    private function createDeleteForm($id)
-    {
-        return $this->createFormBuilder()
-            ->setAction($this->generateUrl('peserta_delete', array('id' => $id)))
-            ->setMethod('DELETE')
-            ->add('submit', 'submit', array('label' => 'Delete'))
-            ->getForm()
-        ;
+        return $response;
     }
 }
+
