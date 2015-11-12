@@ -14,7 +14,6 @@ use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use AppBundle\Entity\Peserta;
-use AppBundle\Form\PesertaType;
 use AppBundle\Form\PresentType;
 use ExcelAnt\Adapter\PhpExcel\Workbook\Workbook,
     ExcelAnt\Adapter\PhpExcel\Sheet\Sheet,
@@ -27,7 +26,7 @@ use ExcelAnt\Adapter\PhpExcel\Workbook\Workbook,
 /**
  * Peserta controller.
  *
- * @Route("/")
+ * @Route("/peserta")
  */
 class PesertaController extends Controller
 {
@@ -86,9 +85,6 @@ class PesertaController extends Controller
 			$pres = $em->getRepository('AppBundle:Peserta')->findOneById($id);
 			($present->getPrint() == 1 ? $pres->setPrint(true) : $pres->setPrint(false));
 			$pres->setPresent(true);
-			$pres->setAddress($present->getAddress());
-			$pres->setEmail($present->getEmail());
-			$pres->setPhone($present->getPhone());
 			$em->persist($pres);
             $em->flush();
             $this->get('session')->getFlashBag()->add('notice', 'Data presensi berhasil disimpan!');
@@ -99,46 +95,6 @@ class PesertaController extends Controller
         return array(
             'entities' => $pagination,
             'form' => $presentForm->createView(),
-        );
-    }
-    
-    /**
-     *
-     * @Route("/peserta/register", name="peserta_register")
-     * @Method({"GET", "POST"})
-     * @Template()
-     */
-    public function registerAction(Request $request)
-    {
-        $em = $this->getDoctrine()->getManager();
-        $paginator = $this->get('knp_paginator');
-		$query = $em->getRepository('AppBundle:Peserta')->dataQuery();
-        $pagination = $paginator->paginate(
-			$query,
-			$this->get('request')->query->get('page', 1),
-			25
-		);
-		
-		$daftar = new Peserta();
-		$daftarForm = $this->createForm(new PesertaType(), $daftar, array(
-			'method' => 'POST'
-		));
-		
-		$daftarForm->handleRequest($request);
-		
-		if ($daftartForm->isValid() && $daftarForm->isSubmitted()) {
-			($daftar->getPrint() == 1 ? $daftar->setPrint(true) : $daftar->setPrint(false));
-			$daftar->setPresent(true);
-			$em->persist($daftar);
-            $em->flush();
-            $this->get('session')->getFlashBag()->add('notice', 'Data peserta berhasil disimpan!');
-
-            return $this->redirect($this->generateUrl('peserta_register'));
-        }
-
-        return array(
-            'entities' => $pagination,
-            'form' => $daftarForm->createView(),
         );
     }
     
@@ -160,26 +116,6 @@ class PesertaController extends Controller
 		
 		$response = new JsonResponse();
 		$response->setData($names);
-		
-		return $response;
-	}
-	
-	/**
-	 * @Route("peserta/find/address", name="peserta_find_address")
-	 * @Method("GET")
-	 */
-	public function getAddressAction(Request $request)
-	{
-		$id = $request->get('id');
-		$em = $this->getDoctrine()->getManager();
-		$entity = $em->getRepository('AppBundle:Peserta')->findOneById($id);
-		$address = array(
-			array('field' => 'address', 'value' => $entity->getAddress()),
-			array('field' => 'email', 'value' => $entity->getEmail()),
-			array('field' => 'phone', 'value' => $entity->getPhone())
-		);
-		$response = new JsonResponse();
-		$response->setData($address);
 		
 		return $response;
 	}

@@ -41,7 +41,7 @@ class PresentType extends AbstractType
 					'multiple' => false,
 					'required' => true,
 					'label' => false,
-					'data' => 2
+					'data' => 1
 				));
     }
     

@@ -1,15 +1,77 @@
 {% extends '::base.html.twig' %}
 
 {% block body -%}
-    <h1>Peserta creation</h1>
-
-    {{ form(form) }}
-
-        <ul class="record_actions">
-    <li>
-        <a href="{{ path('peserta') }}">
-            Back to the list
-        </a>
-    </li>
-</ul>
+	<div class="container">
+		<br>
+		{% for flashMessage in app.session.flashbag.get('') %}
+			<div class=" alert alert-success" id="message-session">
+			{{ flashMessage }}
+			</div>
+		{% endfor %}
+		
+		<div class="row">
+			<h1>Form Registrasi Peserta Di Tempat</h1
+			<div class="text-left">
+				{{ form_start(form) }}
+				{{ form_errors(form) }}
+					<div class="form-group">
+						<label></label>
+						{{ form_widget(form.) }}
+						{{ form_errors(form.) }}
+					</div>
+			</div>
+		</div>
+			<br>
+	<hr>
+	<div class='row'>
+		<h1>Peserta Yang Sudah Hadir</h1>
+		<a target='_blank' href="{{ path('peserta_report') }}" class='btn btn-success pull-right'><i class='fa fa-th-list'></i> Export Peserta</a>
+			<br/><br/>
+			<table class="table table-bordered table-hover">
+				<thead >
+					<tr>
+						<th>No</th>
+						<th>Tanggal</th>
+						<th>Name</th>
+						<th>Gender</th>
+						<th>Asal</th>
+						<th>Alamat</th>
+						<th>Phone</th>
+						<th>Email</th>
+						<th>Print</th>
+					</tr>
+				</thead>
+				<tbody>
+				{% set j = 0 %}
+				{% set pg = app.request.query.get('page') %}
+				{% if pg == 1 or pg == null %}
+					{% set i = 1 %}
+				{% else %}
+					{% set i = 25 *( pg-1 ) + 1 %}
+				{% endif %}
+				{% for entity in entities %}
+					<tr>
+						<td>{{ i }}</td>
+						<td>{{ entity.timestamp|date('Y-m-d') }}</td>
+						<td>{{ entity.name }}</td>
+						<td>{{ entity.gender }}</td>
+						<td>{{ entity.origin }}</td>
+						<td>{{ entity.address }}</td>
+						<td>{{ entity.phone }}</td>
+						<td>{{ entity.email }}</td>
+						<td>{{ entity.cetak }}</td>
+					</tr>
+					{% set i = i + 1 %}
+					{% set j = j + 1 %}
+				{% endfor %}
+				{% if j == 0 %}
+					<tr class="text-center"><td colspan="9">Belum Ada Peserta Yang Hadir.</td></tr>
+				{% endif %}
+				</tbody>
+			</table>
+				<div class="text-center">
+					<h4>{{ knp_pagination_render(entities) }}</h4>
+				</div>
+		</div>
+	</div>
 {% endblock %}

@@ -15,7 +15,6 @@ class PesertaType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
         $builder
-            ->add('timestamp')
             ->add('name')
             ->add('gender')
             ->add('origin')

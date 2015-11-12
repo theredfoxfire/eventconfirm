@@ -105,6 +105,7 @@
 			source: "{{ path('peserta_search') }}",
 			minLength: 2,
 			select: function() {
+				''
 			}
 		});
 	});

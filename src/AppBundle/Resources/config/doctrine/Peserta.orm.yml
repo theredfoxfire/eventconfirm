@@ -8,7 +8,7 @@ AppBundle\Entity\Peserta:
    generator: { strategy: AUTO }
  fields:
   timestamp:
-   type: datetime
+   type: timestamp
   name:
    type: string
   gender:
