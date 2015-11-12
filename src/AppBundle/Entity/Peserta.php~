@@ -283,5 +283,71 @@ class Peserta
     {
         return $this->print;
     }
-}
+    
+    protected $cetak;
+    
+    public function getCetak()
+    {
+		return ($this->print == true ? $this->cetak = "Ya" : $this->cetak = "Tidak");
+        
+    }
+    
+    /**
+     * @var string
+     */
+    private $pod;
 
+    /**
+     * @var string
+     */
+    private $bod;
+
+
+    /**
+     * Set pod
+     *
+     * @param string $pod
+     *
+     * @return Peserta
+     */
+    public function setPod($pod)
+    {
+        $this->pod = $pod;
+
+        return $this;
+    }
+
+    /**
+     * Get pod
+     *
+     * @return string
+     */
+    public function getPod()
+    {
+        return $this->pod;
+    }
+
+    /**
+     * Set bod
+     *
+     * @param string $bod
+     *
+     * @return Peserta
+     */
+    public function setBod($bod)
+    {
+        $this->bod = $bod;
+
+        return $this;
+    }
+
+    /**
+     * Get bod
+     *
+     * @return string
+     */
+    public function getBod()
+    {
+        return $this->bod;
+    }
+}

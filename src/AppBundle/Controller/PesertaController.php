@@ -108,7 +108,7 @@ class PesertaController extends Controller
      * @Method({"GET", "POST"})
      * @Template()
      */
-    public function registerAction(Request $request)
+    public function newAction(Request $request)
     {
         $em = $this->getDoctrine()->getManager();
         $paginator = $this->get('knp_paginator');
@@ -126,14 +126,23 @@ class PesertaController extends Controller
 		
 		$daftarForm->handleRequest($request);
 		
-		if ($daftartForm->isValid() && $daftarForm->isSubmitted()) {
+		if ($daftarForm->isValid() && $daftarForm->isSubmitted()) {
 			($daftar->getPrint() == 1 ? $daftar->setPrint(true) : $daftar->setPrint(false));
 			$daftar->setPresent(true);
+			$daftar->setTimestamp(new \DateTime());
 			$em->persist($daftar);
             $em->flush();
             $this->get('session')->getFlashBag()->add('notice', 'Data peserta berhasil disimpan!');
+            
+            $daftar = new Peserta();
+			$daftarF = $this->createForm(new PesertaType(), $daftar, array(
+				'method' => 'POST'
+			));
 
-            return $this->redirect($this->generateUrl('peserta_register'));
+            return array(
+				'entities' => $pagination,
+				'form' => $daftarF->createView(),
+			);
         }
 
         return array(
