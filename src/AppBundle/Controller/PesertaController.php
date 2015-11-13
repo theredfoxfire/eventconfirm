@@ -134,15 +134,7 @@ class PesertaController extends Controller
             $em->flush();
             $this->get('session')->getFlashBag()->add('notice', 'Data peserta berhasil disimpan!');
             
-            $daftar = new Peserta();
-			$daftarF = $this->createForm(new PesertaType(), $daftar, array(
-				'method' => 'POST'
-			));
-
-            return array(
-				'entities' => $pagination,
-				'form' => $daftarF->createView(),
-			);
+            return $this->redirect($this->generateUrl('peserta_register'));
         }
 
         return array(
